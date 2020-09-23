@@ -72,10 +72,10 @@ impl fmt::Debug for Score {
 fn main() {
     solve(4, &Code::from_str("abca"), &("abc".chars().collect()));
     println!();
-    let ten_chars = "abcdefghijk".chars().collect();
+    let ten_chars = "rygbovxcfp".chars().collect();
     solve(12, &Code::generate(6, &ten_chars), &ten_chars);
     println!();
-    solve(12, &Code::from_str("abcajked"), &ten_chars);
+    solve(12, &Code::from_str("rvcrgfgb"), &ten_chars);
     println!();
     solve(12, &Code::generate(10, &ten_chars), &ten_chars);
 }
@@ -98,6 +98,34 @@ fn select_random_matching_index<T: Eq>(vec: &Vec<T>, target: T) -> Option<usize>
     }
 
     select_random_index(&indexes).map(|index| indexes[index])
+}
+
+fn solve_and_bounce_back_from_tree(max_attempt_count: usize, max_attempt_generations: usize, solution: &Code, available_colors: &Vec<Color>) {
+    let mut guesses = Vec::new();
+    let mut tree = Node::new(Code::with_length(solution.len()));
+
+    println!("Solution: {:?}", solution);
+
+    for _attempt_number in 0..max_attempt_count {
+        let mut attempted = false;
+        for attempt_generation in 0..max_attempt_generations {
+            if let Selection(attempt) = tree.select_code(&guesses, available_colors, 2) {
+                let score = compute_score(&attempt, solution);
+                let guess = Guess::new(attempt, score);
+                println!("recording guess: {:?}; tree size: {}; generations: {}", guess, tree.code_count(), attempt_generation);
+                guesses.push(guess);
+                if score.black == solution.len() {
+                    return;
+                }
+                attempted = true;
+            }
+        }
+
+        if !attempted {
+            println!("generations exhausted; tree size: {}; generations: {}", tree.code_count(), max_attempt_generations);
+            break;
+        }
+    }
 }
 
 #[allow(dead_code)]
@@ -127,18 +155,15 @@ fn solve_without_tree(max_attempt_count: usize, max_attempt_generations: usize, 
     }
 }
 
-fn solve(max_attempt_count: usize, solution: &Code, available_colors: &Vec<Color>) {
+#[allow(dead_code)]
+fn solve_with_one_tree(max_attempt_count: usize, solution: &Code, available_colors: &Vec<Color>) {
     let mut guesses = Vec::new();
+    let mut tree = Node::new(Code::with_length(solution.len()));
 
     println!("Solution: {:?}", solution);
 
-    // Use this to generate one tree for all attempts
-    //let mut tree = Node::new(Code::with_length(solution.len()));
     for _attempt_number in 0..max_attempt_count {
-        // Use this to generate a new tree for each attempt
-        let mut tree = Node::new(Code::with_length(solution.len()));
-
-        if let Some(attempt) = tree.select_code(&guesses, available_colors) {
+        if let Selection(attempt) = tree.select_code(&guesses, available_colors, 0) {
             let score = compute_score(&attempt, solution);
             let guess = Guess::new(attempt, score);
             println!("recording guess: {:?}; tree size: {}", guess, tree.code_count());
@@ -150,6 +175,33 @@ fn solve(max_attempt_count: usize, solution: &Code, available_colors: &Vec<Color
             break;
         }
     }
+}
+
+#[allow(dead_code)]
+fn solve_with_tree_per_attempt(max_attempt_count: usize, solution: &Code, available_colors: &Vec<Color>) {
+    let mut guesses = Vec::new();
+
+    println!("Solution: {:?}", solution);
+
+    for _attempt_number in 0..max_attempt_count {
+        let mut tree = Node::new(Code::with_length(solution.len()));
+
+        if let Selection(attempt) = tree.select_code(&guesses, available_colors, 0) {
+            let score = compute_score(&attempt, solution);
+            let guess = Guess::new(attempt, score);
+            println!("recording guess: {:?}; tree size: {}", guess, tree.code_count());
+            guesses.push(guess);
+            if score.black == solution.len() {
+                return;
+            }
+        } else {
+            break;
+        }
+    }
+}
+
+fn solve(max_attempt_count: usize, solution: &Code, available_colors: &Vec<Color>) {
+    solve_and_bounce_back_from_tree(max_attempt_count, 1000000, solution, available_colors);
 }
 
 fn compute_score(a: &Code, b: &Code) -> Score {
@@ -264,6 +316,13 @@ fn try_select_code(length: usize, previous_guesses: &Vec<Guess>, available_color
     Some(attempt)
 }
 
+enum SelectionResult {
+    Selection(Code),
+    DeadBranch,
+    Surrender(usize),
+}
+use SelectionResult::*;
+
 impl Node {
     fn new(code: Code) -> Self {
         Node {
@@ -277,7 +336,7 @@ impl Node {
         self.code_count
     }
 
-    fn select_code(&mut self, previous_guesses: &Vec<Guess>, available_colors: &Vec<Color>) -> Option<Code> {
+    fn select_code(&mut self, previous_guesses: &Vec<Guess>, available_colors: &Vec<Color>, surrender_depth_on_dead_branch: usize) -> SelectionResult {
         // given a node,
         //   a) does it contradict any guesses? if so:
         //     delete it from its parent
@@ -289,28 +348,41 @@ impl Node {
         //     e) yes: select a random child and make that the new node
 
         if previous_guesses.iter().any(|guess| !guess.matches(&self.code)) {
-            return None;
+            return DeadBranch;
         }
 
         self.expand(available_colors);
 
         match &mut self.children {
-            NoChildren => Some(self.code.clone()),
+            NoChildren => Selection(self.code.clone()),
             Unexpanded => panic!("ok but what"),
             Expanded(children) => {
                 while children.len() > 0 {
                     let index = select_random_index(&children).unwrap();
                     self.code_count -= children[index].code_count();
-                    let result = children[index].select_code(previous_guesses, available_colors);
+                    let result = children[index].select_code(previous_guesses, available_colors, surrender_depth_on_dead_branch);
 
-                    if let Some(_) = result {
-                        self.code_count += children[index].code_count();
-                        return result;
-                    } else {
-                        children.remove(index);
+                    match result {
+                        Selection(_) => {
+                            self.code_count += children[index].code_count();
+                            return result;
+                        },
+                        DeadBranch => {
+                            children.remove(index);
+                            if surrender_depth_on_dead_branch > 0 {
+                                return Surrender(surrender_depth_on_dead_branch - 1);
+                            }
+                        },
+                        Surrender(0) => {
+                            self.code_count += children[index].code_count();
+                        }
+                        Surrender(depth) => {
+                            self.code_count += children[index].code_count();
+                            return Surrender(depth - 1);
+                        }
                     }
                 }
-                None
+                DeadBranch
             },
         }
     }
