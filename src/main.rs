@@ -100,9 +100,10 @@ fn select_random_matching_index<T: Eq>(vec: &Vec<T>, target: T) -> Option<usize>
     select_random_index(&indexes).map(|index| indexes[index])
 }
 
-fn solve_and_bounce_back_from_tree(max_attempt_count: usize, max_attempt_generations: usize, solution: &Code, available_colors: &Vec<Color>) {
+fn solve_and_bounce_back_from_tree(max_attempt_count: usize, solution: &Code, available_colors: &Vec<Color>) {
     let mut guesses = Vec::new();
     let mut tree = Node::new(Code::with_length(solution.len()));
+    let max_attempt_generations = 10000;
 
     println!("Solution: {:?}", solution);
 
@@ -201,7 +202,7 @@ fn solve_with_tree_per_attempt(max_attempt_count: usize, solution: &Code, availa
 }
 
 fn solve(max_attempt_count: usize, solution: &Code, available_colors: &Vec<Color>) {
-    solve_and_bounce_back_from_tree(max_attempt_count, 1000000, solution, available_colors);
+    solve_and_bounce_back_from_tree(max_attempt_count, solution, available_colors);
 }
 
 fn compute_score(a: &Code, b: &Code) -> Score {
