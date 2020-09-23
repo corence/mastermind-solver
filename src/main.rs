@@ -1,5 +1,7 @@
 
 use rand::Rng;
+use rand::seq::SliceRandom;
+use rand::thread_rng;
 use std::collections::HashMap;
 use std::fmt;
 
@@ -80,7 +82,7 @@ fn main() {
 
 fn select_random_index<T>(vec: &Vec<T>) -> Option<usize> {
     if vec.len() > 0 {
-        let index = rand::thread_rng().gen_range(0, vec.len());
+        let index = thread_rng().gen_range(0, vec.len());
         Some(index)
     } else {
         None
@@ -98,22 +100,51 @@ fn select_random_matching_index<T: Eq>(vec: &Vec<T>, target: T) -> Option<usize>
     select_random_index(&indexes).map(|index| indexes[index])
 }
 
+#[allow(dead_code)]
+fn solve_without_tree(max_attempt_count: usize, max_attempt_generations: usize, solution: &Code, available_colors: &Vec<Color>) {
+    let mut guesses = Vec::new();
+
+    println!("Solution: {:?}", solution);
+
+    for _attempt_number in 0..max_attempt_count {
+        let mut attempted = false;
+        for attempt_generation in 0..max_attempt_generations {
+            if let Some(attempt) = try_select_code(solution.len(), &guesses, available_colors) {
+                let score = compute_score(&attempt, solution);
+                let guess = Guess::new(attempt, score);
+                println!("recording guess: {:?}; generations: {}", guess, attempt_generation);
+                guesses.push(guess);
+                if score.black == solution.len() {
+                    return;
+                }
+                attempted = true;
+            }
+        }
+
+        if !attempted {
+            break;
+        }
+    }
+}
+
 fn solve(max_attempt_count: usize, solution: &Code, available_colors: &Vec<Color>) {
     let mut guesses = Vec::new();
 
     println!("Solution: {:?}", solution);
 
-        let mut tree = Node::new(Code::with_length(solution.len()));
+    // Use this to generate one tree for all attempts
+    //let mut tree = Node::new(Code::with_length(solution.len()));
     for _attempt_number in 0..max_attempt_count {
+        // Use this to generate a new tree for each attempt
+        let mut tree = Node::new(Code::with_length(solution.len()));
 
         if let Some(attempt) = tree.select_code(&guesses, available_colors) {
             let score = compute_score(&attempt, solution);
             let guess = Guess::new(attempt, score);
             println!("recording guess: {:?}; tree size: {}", guess, tree.code_count());
-            //println!("tree: {:#?}", tree);
             guesses.push(guess);
             if score.black == solution.len() {
-                break;
+                return;
             }
         } else {
             break;
@@ -213,6 +244,24 @@ impl Guess {
 
         true
     }
+}
+
+#[allow(dead_code)]
+fn try_select_code(length: usize, previous_guesses: &Vec<Guess>, available_colors: &Vec<Color>) -> Option<Code> {
+    let mut attempt = Code::with_length(length);
+    let mut open_indexes = (0..length).collect::<Vec<usize>>();
+    open_indexes.shuffle(&mut thread_rng());
+
+    while let Some(index) = open_indexes.pop() {
+        let color = available_colors[select_random_index(&available_colors).unwrap()];
+        attempt.code[index] = color;
+
+        if previous_guesses.iter().any(|guess| !guess.matches(&attempt)) {
+            return None;
+        }
+    }
+
+    Some(attempt)
 }
 
 impl Node {
