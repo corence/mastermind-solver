@@ -1,56 +1,13 @@
 
-use rand::Rng;
+mod code;
+mod random_index;
+
+use crate::random_index::*;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
+use self::code::code::*;
 use std::collections::HashMap;
 use std::fmt;
-
-type Color = char;
-
-#[derive(Clone)]
-struct Code {
-    code: Vec<Color>,
-}
-
-impl Code {
-    fn new(code: Vec<Color>) -> Self {
-        Code {
-            code
-        }
-    }
-
-    fn with_length(length: usize) -> Code {
-        let mut code = Vec::new();
-        code.resize(length, '.');
-        Self::new(code)
-    }
-
-    fn from_str(s: &str) -> Code {
-        Self::new(s.chars().collect())
-    }
-
-    fn generate(length: usize, available_colors: &Vec<Color>) -> Code {
-        let mut code = Vec::new();
-
-        for _ in 0..length {
-            let index = select_random_index(&available_colors).unwrap();
-            code.push(available_colors[index]);
-        }
-
-        Self::new(code)
-    }
-
-    fn len(&self) -> usize {
-        self.code.len()
-    }
-}
-
-impl fmt::Debug for Code {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&self.code.iter().collect::<String>())
-    }
-}
-
 
 #[derive(PartialEq,Eq,Clone,Copy)]
 struct Score {
@@ -78,26 +35,6 @@ fn main() {
     solve(12, &Code::from_str("rvcrgfgb"), &ten_chars);
     println!();
     solve(12, &Code::generate(10, &ten_chars), &ten_chars);
-}
-
-fn select_random_index<T>(vec: &Vec<T>) -> Option<usize> {
-    if vec.len() > 0 {
-        let index = thread_rng().gen_range(0, vec.len());
-        Some(index)
-    } else {
-        None
-    }
-}
-
-fn select_random_matching_index<T: Eq>(vec: &Vec<T>, target: T) -> Option<usize> {
-    let mut indexes = Vec::new();
-    for (i, element) in vec.iter().enumerate() {
-        if *element == target {
-            indexes.push(i);
-        }
-    }
-
-    select_random_index(&indexes).map(|index| indexes[index])
 }
 
 fn solve_and_bounce_back_from_tree(max_attempt_count: usize, solution: &Code, available_colors: &Vec<Color>) {
