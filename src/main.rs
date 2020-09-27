@@ -3,8 +3,8 @@ mod attempt;
 mod code;
 mod random_index;
 
-use crate::attempt::attempt::*;
-use crate::code::code::*;
+use crate::attempt::*;
+use crate::code::*;
 use crate::random_index::*;
 use rand::seq::SliceRandom;
 use rand::thread_rng;

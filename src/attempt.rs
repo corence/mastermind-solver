@@ -1,5 +1,5 @@
 
-use crate::code::code::*;
+use crate::code::*;
 use std::collections::HashMap;
 use std::fmt;
 
