@@ -2,6 +2,7 @@
 mod attempt;
 mod code;
 mod random_index;
+mod solver;
 
 use crate::attempt::*;
 use crate::code::*;
@@ -11,6 +12,8 @@ use rand::thread_rng;
 use std::fmt;
 
 fn main() {
+    let solvers = solver::generate_solver_directory();
+
     solve(4, &Code::from_str("abca"), &("abc".chars().collect()));
     println!();
     let ten_chars = "rygbovxcfp".chars().collect();
