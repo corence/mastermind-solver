@@ -68,7 +68,7 @@ fn parse_algorithm(name: &str, mut algorithms: HashMap<String, Box<dyn Solver>>)
     }
 }
 
-fn parse_args(args: &Vec<String>, mut algorithms: HashMap<String, Box<dyn Solver>>) -> Result<(Vec<Color>, Code, Box<dyn Solver>), String> {
+fn parse_args(args: &Vec<String>, algorithms: HashMap<String, Box<dyn Solver>>) -> Result<(Vec<Color>, Code, Box<dyn Solver>), String> {
     if args.len() != 5 {
         return Err(format!("number of arguments should be 5, but was {}", args.len()));
     }
@@ -86,7 +86,11 @@ fn main() {
     let solver_names: Vec<String> = solvers.keys().map(|name| name.clone()).collect();
 
     match parse_args(&env::args().collect(), solvers) {
-        Ok(_) => println!("wut"),
+        Ok((available_colors, solution, solver)) => {
+            println!("available colors: {:?}", available_colors);
+            println!("solution: {:?}", solution);
+            println!("selected algorithm: {}", solver.name());
+        },
         Err(s) => {
             println!();
             println!("{}", s);

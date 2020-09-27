@@ -2,17 +2,21 @@
 use crate::code::*;
 use super::Solver;
 
-pub struct RandomSolver {
+pub struct Awful {
 }
 
-impl RandomSolver {
+impl Awful {
     pub fn new() -> Self {
-        RandomSolver {
+        Awful {
         }
     }
 }
 
-impl Solver for RandomSolver {
+impl Solver for Awful {
+    fn name(&self) -> &str {
+        "awful"
+    }
+
     fn solve(&mut self) -> Code {
         Code::with_length(0)
     }
