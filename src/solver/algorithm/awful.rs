@@ -1,6 +1,6 @@
 
 use crate::code::*;
-use super::Solver;
+use super::Algorithm;
 
 pub struct Awful {
 }
@@ -12,13 +12,9 @@ impl Awful {
     }
 }
 
-impl Solver for Awful {
+impl Algorithm for Awful {
     fn name(&self) -> &str {
         "awful"
-    }
-
-    fn solve(&mut self) -> Code {
-        Code::with_length(0)
     }
 }
 

@@ -8,6 +8,7 @@ use crate::attempt::*;
 use crate::code::*;
 use crate::random_index::*;
 use crate::solver::*;
+use crate::solver::algorithm::Algorithm;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 use std::collections::HashMap;
@@ -60,7 +61,7 @@ fn parse_solution(solution_type: &str, second_argument: &str, available_colors: 
     }
 }
 
-fn parse_algorithm(name: &str, mut algorithms: HashMap<String, Box<dyn Solver>>) -> Result<Box<dyn Solver>, String> {
+fn parse_algorithm(name: &str, mut algorithms: HashMap<String, Box<dyn Algorithm>>) -> Result<Box<dyn Algorithm>, String> {
     if let Some(solver) = algorithms.remove(name) {
         Ok(solver)
     } else {
@@ -68,7 +69,7 @@ fn parse_algorithm(name: &str, mut algorithms: HashMap<String, Box<dyn Solver>>)
     }
 }
 
-fn parse_args(args: &Vec<String>, algorithms: HashMap<String, Box<dyn Solver>>) -> Result<(Vec<Color>, Code, Box<dyn Solver>), String> {
+fn parse_args(args: &Vec<String>, algorithms: HashMap<String, Box<dyn Algorithm>>) -> Result<(Vec<Color>, Code, Box<dyn Algorithm>), String> {
     if args.len() != 5 {
         return Err(format!("number of arguments should be 5, but was {}", args.len()));
     }
@@ -82,10 +83,10 @@ fn parse_args(args: &Vec<String>, algorithms: HashMap<String, Box<dyn Solver>>) 
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    let solvers = solver::generate_solver_directory();
-    let solver_names: Vec<String> = solvers.keys().map(|name| name.clone()).collect();
+    let algorithms = solver::algorithm::algorithms();
+    let algorithm_names: Vec<String> = algorithms.keys().map(|name| name.clone()).collect();
 
-    match parse_args(&env::args().collect(), solvers) {
+    match parse_args(&env::args().collect(), algorithms) {
         Ok((available_colors, solution, solver)) => {
             println!("available colors: {:?}", available_colors);
             println!("solution: {:?}", solution);
@@ -113,7 +114,7 @@ fn main() {
             println!("<solution>: the code for the program to attempt to solve. Each character must be in the <charset>.");
             println!();
             println!("<algorithm>: the choice of solving algorithm. Valid choices:");
-            println!("{:#?}", solver_names);
+            println!("{:#?}", algorithm_names);
         }
     }
 
@@ -129,35 +130,7 @@ fn main() {
     */
 }
 
-fn solve_and_bounce_back_from_tree(max_attempt_count: usize, solution: &Code, available_colors: &Vec<Color>) {
-    let mut guesses = Vec::new();
-    let mut tree = Node::new(Code::with_length(solution.len()));
-    let max_attempt_generations = 10000;
-
-    println!("Solution: {:?}", solution);
-
-    for _attempt_number in 0..max_attempt_count {
-        let mut attempted = false;
-        for attempt_generation in 0..max_attempt_generations {
-            if let Selection(attempt) = tree.select_code(&guesses, available_colors, 2) {
-                let score = compute_score(&attempt, solution);
-                let guess = Guess::new(attempt, score);
-                println!("recording guess: {:?}; tree size: {}; generations: {}", guess, tree.code_count(), attempt_generation);
-                guesses.push(guess);
-                if score.black == solution.len() {
-                    return;
-                }
-                attempted = true;
-            }
-        }
-
-        if !attempted {
-            println!("generations exhausted; tree size: {}; generations: {}", tree.code_count(), max_attempt_generations);
-            break;
-        }
-    }
-}
-
+/*
 #[allow(dead_code)]
 fn solve_without_tree(max_attempt_count: usize, max_attempt_generations: usize, solution: &Code, available_colors: &Vec<Color>) {
     let mut guesses = Vec::new();
@@ -229,32 +202,10 @@ fn solve_with_tree_per_attempt(max_attempt_count: usize, solution: &Code, availa
         }
     }
 }
+*/
 
 fn solve(max_attempt_count: usize, solution: &Code, available_colors: &Vec<Color>) {
-    solve_and_bounce_back_from_tree(max_attempt_count, solution, available_colors);
-}
-
-#[derive(Debug)]
-enum NodeChildren {
-    Expanded(Vec<Node>),
-    NoChildren,
-    Unexpanded,
-}
-use NodeChildren::*;
-
-struct Node {
-    code: Code,
-    code_count: usize,
-    children: NodeChildren,
-}
-
-impl fmt::Debug for Node {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Node")
-         .field("code", &self.code)
-         .field("children", &self.children)
-         .finish()
-    }
+    //solve_with_tree_per_attempt(max_attempt_count, solution, available_colors);
 }
 
 #[allow(dead_code)]
@@ -275,92 +226,3 @@ fn try_select_code(length: usize, previous_guesses: &Vec<Guess>, available_color
     Some(attempt)
 }
 
-enum SelectionResult {
-    Selection(Code),
-    DeadBranch,
-    Surrender(usize),
-}
-use SelectionResult::*;
-
-impl Node {
-    fn new(code: Code) -> Self {
-        Node {
-            code,
-            children: Unexpanded,
-            code_count: 1,
-        }
-    }
-
-    fn code_count(&self) -> usize {
-        self.code_count
-    }
-
-    fn select_code(&mut self, previous_guesses: &Vec<Guess>, available_colors: &Vec<Color>, surrender_depth_on_dead_branch: usize) -> SelectionResult {
-        // given a node,
-        //   a) does it contradict any guesses? if so:
-        //     delete it from its parent
-        //     set the parent as the current node
-        //     goto e (or if easier, just goto a)
-        //   b) has it been expanded? if not, expand it now
-        //   c) does it have children? 
-        //     d) no: return its code
-        //     e) yes: select a random child and make that the new node
-
-        if previous_guesses.iter().any(|guess| !guess.matches(&self.code)) {
-            return DeadBranch;
-        }
-
-        self.expand(available_colors);
-
-        match &mut self.children {
-            NoChildren => Selection(self.code.clone()),
-            Unexpanded => panic!("ok but what"),
-            Expanded(children) => {
-                while children.len() > 0 {
-                    let index = select_random_index(&children).unwrap();
-                    self.code_count -= children[index].code_count();
-                    let result = children[index].select_code(previous_guesses, available_colors, surrender_depth_on_dead_branch);
-
-                    match result {
-                        Selection(_) => {
-                            self.code_count += children[index].code_count();
-                            return result;
-                        },
-                        DeadBranch => {
-                            children.remove(index);
-                            if surrender_depth_on_dead_branch > 0 {
-                                return Surrender(surrender_depth_on_dead_branch - 1);
-                            }
-                        },
-                        Surrender(0) => {
-                            self.code_count += children[index].code_count();
-                        }
-                        Surrender(depth) => {
-                            self.code_count += children[index].code_count();
-                            return Surrender(depth - 1);
-                        }
-                    }
-                }
-                DeadBranch
-            },
-        }
-    }
-
-    fn expand(&mut self, available_colors: &Vec<Color>) {
-        if let Unexpanded = self.children {
-            self.children = match select_random_matching_index(&self.code.code, '.') {
-                None => NoChildren,
-                Some(index) => {
-                    let mut children = Vec::new();
-                    for color in available_colors {
-                        let mut new_code = self.code.clone();
-                        new_code.code[index] = *color;
-                        children.push(Node::new(new_code));
-                        self.code_count += 1;
-                    }
-                    Expanded(children)
-                },
-            };
-        }
-    }
-}

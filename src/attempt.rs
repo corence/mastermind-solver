@@ -34,6 +34,10 @@ impl Guess {
         }
     }
 
+    pub fn code(&self) -> Code {
+        self.code.clone()
+    }
+
     pub fn matches(&self, code: &Code) -> bool {
         let score = compute_score(&self.code, code);
 

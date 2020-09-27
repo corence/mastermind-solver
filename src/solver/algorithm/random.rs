@@ -1,6 +1,6 @@
 
 use crate::code::*;
-use super::Solver;
+use super::Algorithm;
 
 pub struct Random {
 }
@@ -12,13 +12,9 @@ impl Random {
     }
 }
 
-impl Solver for Random {
+impl Algorithm for Random {
     fn name(&self) -> &str {
         "random"
-    }
-
-    fn solve(&mut self) -> Code {
-        Code::with_length(0)
     }
 }
 
