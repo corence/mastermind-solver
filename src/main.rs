@@ -10,23 +10,82 @@ use crate::random_index::*;
 use crate::solver::*;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
+use std::collections::HashMap;
 use std::env;
 use std::fmt;
 
-fn parse_args(args: &Vec<String>) -> Result<(Vec<Color>, Vec<Color>, Box<dyn Solver>), String> {
+fn parse_charset(charset: &str) -> Result<Vec<Color>, String> {
+    let mut available_colors: Vec<Color> = charset.chars().collect();
+    if let Some(pos) = available_colors.iter().position(|c| *c == '.') {
+        return Err(format!("charset cannot contain period character"));
+    }
+
+    let input_length = available_colors.len();
+    available_colors.sort();
+    available_colors.dedup();
+
+    if available_colors.len() != input_length {
+        return Err(format!("charset cannot contain duplicate characters"));
+    }
+
+    Ok(available_colors)
+}
+
+fn parse_solution(solution_type: &str, second_argument: &str, available_colors: &Vec<Color>) -> Result<Code, String> {
+    match solution_type {
+        "generate" => {
+            if let Ok(solution_length) = second_argument.parse::<usize>() {
+                if solution_length > 10 {
+                    Err(format!("okay but that's too crazy: your length shouldn't go over 10 i mean"))
+                } else {
+                    Ok(Code::generate(solution_length, available_colors))
+                }
+            } else {
+                Err(format!("couldn't parse the length for the generated solution length"))
+            }
+        },
+        "input" => {
+            let solution = second_argument;
+            let illegal_colors: Vec<Color> = solution.chars()
+                .filter(|sc| available_colors.iter().position(|ac| *ac == *sc).is_none())
+                .collect();
+
+            if !illegal_colors.is_empty() {
+                Err(format!("okay but the solution contains characters not in the charset: {:?}", illegal_colors))
+            } else {
+                Ok(Code::from_str(solution))
+            }
+        },
+        _ => Err(format!("solution type must be 'generate' or 'input', but was: '{}'", solution_type)),
+    }
+}
+
+fn parse_algorithm(name: &str, mut algorithms: HashMap<String, Box<dyn Solver>>) -> Result<Box<dyn Solver>, String> {
+    if let Some(solver) = algorithms.remove(name) {
+        Ok(solver)
+    } else {
+        Err(format!("unrecognized algorithm: {}", name))
+    }
+}
+
+fn parse_args(args: &Vec<String>, mut algorithms: HashMap<String, Box<dyn Solver>>) -> Result<(Vec<Color>, Code, Box<dyn Solver>), String> {
     if args.len() != 5 {
         return Err(format!("number of arguments should be 5, but was {}", args.len()));
     }
 
-    return Err("omg".to_string());
+    let charset = parse_charset(&args[1])?;
+    let solution = parse_solution(&args[2], &args[3], &charset)?;
+    let algorithm = parse_algorithm(&args[4], algorithms)?;
+
+    Ok((charset, solution, algorithm))
 }
 
 fn main() {
-    let solvers = solver::generate_solver_directory();
-
     let args: Vec<String> = env::args().collect();
+    let solvers = solver::generate_solver_directory();
+    let solver_names: Vec<String> = solvers.keys().map(|name| name.clone()).collect();
 
-    match parse_args(&env::args().collect()) {
+    match parse_args(&env::args().collect(), solvers) {
         Ok(_) => println!("wut"),
         Err(s) => {
             println!();
@@ -50,7 +109,7 @@ fn main() {
             println!("<solution>: the code for the program to attempt to solve. Each character must be in the <charset>.");
             println!();
             println!("<algorithm>: the choice of solving algorithm. Valid choices:");
-            println!("{:#?}", solvers.keys());
+            println!("{:#?}", solver_names);
         }
     }
 
