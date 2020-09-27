@@ -7,13 +7,54 @@ mod solver;
 use crate::attempt::*;
 use crate::code::*;
 use crate::random_index::*;
+use crate::solver::*;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
+use std::env;
 use std::fmt;
+
+fn parse_args(args: &Vec<String>) -> Result<(Vec<Color>, Vec<Color>, Box<dyn Solver>), String> {
+    if args.len() != 5 {
+        return Err(format!("number of arguments should be 5, but was {}", args.len()));
+    }
+
+    return Err("omg".to_string());
+}
 
 fn main() {
     let solvers = solver::generate_solver_directory();
 
+    let args: Vec<String> = env::args().collect();
+
+    match parse_args(&env::args().collect()) {
+        Ok(_) => println!("wut"),
+        Err(s) => {
+            println!();
+            println!("{}", s);
+            println!();
+            println!("This is a solver for the game called Mastermind.");
+            println!();
+            println!("usage 1: {} <charset> generate <length> <algorithm>", args[0]);
+            println!("  this generates a solution.");
+            println!("usage 2: {} <charset> input <solution> <algorithm>", args[0]);
+            println!("  this solves the given solution.");
+            println!();
+            println!("definitions:");
+            println!();
+            println!("<charset>: the set of possible values for each position in the code. Examples:");
+            println!("  abcdefg");
+            println!("  rygbovxcfp");
+            println!();
+            println!("<length>: positive integer. the number of positions in the solution to be generated.");
+            println!();
+            println!("<solution>: the code for the program to attempt to solve. Each character must be in the <charset>.");
+            println!();
+            println!("<algorithm>: the choice of solving algorithm. Valid choices:");
+            println!("{:#?}", solvers.keys());
+        }
+    }
+
+    /*
     solve(4, &Code::from_str("abca"), &("abc".chars().collect()));
     println!();
     let ten_chars = "rygbovxcfp".chars().collect();
@@ -22,6 +63,7 @@ fn main() {
     solve(12, &Code::from_str("rvcrgfgb"), &ten_chars);
     println!();
     solve(12, &Code::generate(10, &ten_chars), &ten_chars);
+    */
 }
 
 fn solve_and_bounce_back_from_tree(max_attempt_count: usize, solution: &Code, available_colors: &Vec<Color>) {
