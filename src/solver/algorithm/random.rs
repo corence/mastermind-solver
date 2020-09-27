@@ -6,7 +6,7 @@ pub struct Random {
 }
 
 impl Random {
-    pub fn new() -> Self {
+    pub fn new(available_colors: &Vec<Color>, solution_length: usize) -> Self {
         Random {
         }
     }

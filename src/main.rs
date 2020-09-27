@@ -8,7 +8,7 @@ use crate::attempt::*;
 use crate::code::*;
 use crate::random_index::*;
 use crate::solver::*;
-use crate::solver::algorithm::Algorithm;
+use crate::solver::algorithm::*;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 use std::collections::HashMap;
@@ -61,32 +61,33 @@ fn parse_solution(solution_type: &str, second_argument: &str, available_colors: 
     }
 }
 
-fn parse_algorithm(name: &str, mut algorithms: HashMap<String, Box<dyn Algorithm>>) -> Result<Box<dyn Algorithm>, String> {
-    if let Some(solver) = algorithms.remove(name) {
-        Ok(solver)
+fn parse_algorithm(name: &str, algorithm_constructors: &mut HashMap<String, AlgorithmConstructor>) -> Result<AlgorithmConstructor, String> {
+    if let Some(constructor) = algorithm_constructors.remove(name) {
+        Ok(constructor)
     } else {
         Err(format!("unrecognized algorithm: {}", name))
     }
 }
 
-fn parse_args(args: &Vec<String>, algorithms: HashMap<String, Box<dyn Algorithm>>) -> Result<(Vec<Color>, Code, Box<dyn Algorithm>), String> {
+fn parse_args(args: &Vec<String>, algorithm_constructors: &mut HashMap<String, AlgorithmConstructor>) -> Result<(Vec<Color>, Code, Box<dyn Algorithm>), String> {
     if args.len() != 5 {
         return Err(format!("number of arguments should be 5, but was {}", args.len()));
     }
 
-    let charset = parse_charset(&args[1])?;
-    let solution = parse_solution(&args[2], &args[3], &charset)?;
-    let algorithm = parse_algorithm(&args[4], algorithms)?;
+    let available_colors = parse_charset(&args[1])?;
+    let solution = parse_solution(&args[2], &args[3], &available_colors)?;
+    let algorithm_constructor = parse_algorithm(&args[4], algorithm_constructors)?;
+    let algorithm = algorithm_constructor(&available_colors, solution.len());
 
-    Ok((charset, solution, algorithm))
+    Ok((available_colors, solution, algorithm))
 }
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    let algorithms = solver::algorithm::algorithms();
-    let algorithm_names: Vec<String> = algorithms.keys().map(|name| name.clone()).collect();
+    let mut algorithm_constructors = solver::algorithm::algorithm_constructors();
+    let algorithm_names: Vec<String> = algorithm_constructors.keys().map(|name| name.clone()).collect();
 
-    match parse_args(&env::args().collect(), algorithms) {
+    match parse_args(&env::args().collect(), &mut algorithm_constructors) {
         Ok((available_colors, solution, solver)) => {
             println!("available colors: {:?}", available_colors);
             println!("solution: {:?}", solution);
