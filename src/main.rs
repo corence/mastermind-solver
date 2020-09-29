@@ -88,10 +88,15 @@ fn main() {
     let algorithm_names: Vec<String> = algorithm_constructors.keys().map(|name| name.clone()).collect();
 
     match parse_args(&env::args().collect(), &mut algorithm_constructors) {
-        Ok((available_colors, solution, solver)) => {
+        Ok((available_colors, solution, mut algorithm)) => {
+            let max_attempt_count = 10;
             println!("available colors: {:?}", available_colors);
             println!("solution: {:?}", solution);
-            println!("selected algorithm: {}", solver.name());
+            println!("selected algorithm: {}", algorithm.name());
+            println!("max attempt count: {}", max_attempt_count);
+
+            let submission = solve(&mut (*algorithm), max_attempt_count, &solution);
+            println!("submission: {:?}", submission);
         },
         Err(s) => {
             println!();
@@ -205,8 +210,21 @@ fn solve_with_tree_per_attempt(max_attempt_count: usize, solution: &Code, availa
 }
 */
 
-fn solve(max_attempt_count: usize, solution: &Code, available_colors: &Vec<Color>) {
-    //solve_with_tree_per_attempt(max_attempt_count, solution, available_colors);
+fn solve(algorithm: &mut Algorithm, max_attempt_count: usize, solution: &Code) -> Option<Code> {
+    for _attempt_number in 0..max_attempt_count {
+        if let Some(candidate) = algorithm.generate_candidate() {
+            let score = compute_score(&candidate, solution);
+            println!("recording guess: {:?}", (&candidate, score));
+            if score.black == solution.len() {
+                return Some(candidate);
+            }
+            algorithm.record_attempt(&candidate, score);
+        } else {
+            break;
+        }
+    }
+
+    None
 }
 
 #[allow(dead_code)]
