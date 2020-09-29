@@ -11,7 +11,7 @@ use crate::solver::*;
 use crate::solver::algorithm::*;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::env;
 use std::fmt;
 
@@ -61,7 +61,7 @@ fn parse_solution(solution_type: &str, second_argument: &str, available_colors: 
     }
 }
 
-fn parse_algorithm(name: &str, algorithm_constructors: &mut HashMap<String, AlgorithmConstructor>) -> Result<AlgorithmConstructor, String> {
+fn parse_algorithm(name: &str, algorithm_constructors: &mut BTreeMap<String, AlgorithmConstructor>) -> Result<AlgorithmConstructor, String> {
     if let Some(constructor) = algorithm_constructors.remove(name) {
         Ok(constructor)
     } else {
@@ -69,7 +69,7 @@ fn parse_algorithm(name: &str, algorithm_constructors: &mut HashMap<String, Algo
     }
 }
 
-fn parse_args(args: &Vec<String>, algorithm_constructors: &mut HashMap<String, AlgorithmConstructor>) -> Result<(Vec<Color>, Code, Box<dyn Algorithm>), String> {
+fn parse_args(args: &Vec<String>, algorithm_constructors: &mut BTreeMap<String, AlgorithmConstructor>) -> Result<(Vec<Color>, Code, Box<dyn Algorithm>), String> {
     if args.len() != 5 {
         return Err(format!("number of arguments should be 5, but was {}", args.len()));
     }
@@ -143,7 +143,7 @@ fn solve_without_tree(max_attempt_count: usize, max_attempt_generations: usize, 
         for attempt_generation in 0..max_attempt_generations {
             if let Some(attempt) = try_select_code(solution.len(), &guesses, available_colors) {
                 let score = compute_score(&attempt, solution);
-                let guess = Guess::new(attempt, score);
+                let guess = Attempt::new(attempt, score);
                 println!("recording guess: {:?}; generations: {}", guess, attempt_generation);
                 guesses.push(guess);
                 if score.black == solution.len() {
@@ -169,7 +169,7 @@ fn solve_with_one_tree(max_attempt_count: usize, solution: &Code, available_colo
     for _attempt_number in 0..max_attempt_count {
         if let Selection(attempt) = tree.select_code(&guesses, available_colors, 0) {
             let score = compute_score(&attempt, solution);
-            let guess = Guess::new(attempt, score);
+            let guess = Attempt::new(attempt, score);
             println!("recording guess: {:?}; tree size: {}", guess, tree.code_count());
             guesses.push(guess);
             if score.black == solution.len() {
@@ -192,7 +192,7 @@ fn solve_with_tree_per_attempt(max_attempt_count: usize, solution: &Code, availa
 
         if let Selection(attempt) = tree.select_code(&guesses, available_colors, 0) {
             let score = compute_score(&attempt, solution);
-            let guess = Guess::new(attempt, score);
+            let guess = Attempt::new(attempt, score);
             println!("recording guess: {:?}; tree size: {}", guess, tree.code_count());
             guesses.push(guess);
             if score.black == solution.len() {
@@ -210,7 +210,7 @@ fn solve(max_attempt_count: usize, solution: &Code, available_colors: &Vec<Color
 }
 
 #[allow(dead_code)]
-fn try_select_code(length: usize, previous_guesses: &Vec<Guess>, available_colors: &Vec<Color>) -> Option<Code> {
+fn try_select_code(length: usize, previous_guesses: &Vec<Attempt>, available_colors: &Vec<Color>) -> Option<Code> {
     let mut attempt = Code::with_length(length);
     let mut open_indexes = (0..length).collect::<Vec<usize>>();
     open_indexes.shuffle(&mut thread_rng());

@@ -21,14 +21,14 @@ impl fmt::Debug for Score {
 }
 
 #[derive(Debug)]
-pub struct Guess {
+pub struct Attempt {
     code: Code,
     score: Score,
 }
 
-impl Guess {
+impl Attempt {
     pub fn new(code: Code, score: Score) -> Self {
-        Guess {
+        Attempt {
             code,
             score,
         }

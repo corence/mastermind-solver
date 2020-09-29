@@ -47,7 +47,7 @@ impl Node {
         self.code_count
     }
 
-    pub fn select_code(&mut self, previous_guesses: &Vec<Guess>, available_colors: &Vec<Color>, surrender_depth_on_dead_branch: usize) -> SelectionResult {
+    pub fn select_code(&mut self, previous_guesses: &Vec<Attempt>, available_colors: &Vec<Color>, surrender_depth_on_dead_branch: usize) -> SelectionResult {
         // given a node,
         //   a) does it contradict any guesses? if so:
         //     delete it from its parent

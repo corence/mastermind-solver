@@ -1,54 +1,45 @@
 
+use crate::attempt::*;
 use crate::code::*;
 use crate::solver::node::*;
-use super::Solver;
+use super::*;
 
 pub struct TreeWithSurrender {
+    tree: Node,
+    available_colors: Vec<Color>,
+    attempts: Vec<Attempt>,
 }
 
 impl TreeWithSurrender {
-    pub fn new() -> Self {
+    pub fn new(available_colors: &Vec<Color>, solution_length: usize) -> Self {
         TreeWithSurrender {
+            tree: Node::new(Code::with_length(solution_length)),
+            available_colors: available_colors.clone(),
+            attempts: Vec::new(),
         }
     }
 }
 
-impl Solver for TreeWithSurrender {
+impl Algorithm for TreeWithSurrender {
     fn name(&self) -> &str {
         "tree_with_surrender"
     }
 
-    fn solve(&mut self) -> Code {
-        Code::with_length(0)
+    fn record_attempt(&mut self, attempt: &Code, score: Score) {
+        self.attempts.push(Attempt::new(attempt.clone(), score));
     }
 
-    fn solve(max_attempt_count: usize, solution: &Code, available_colors: &Vec<Color>) -> Option<Code> {
-        let mut guesses = Vec::new();
-        let mut tree = Node::new(Code::with_length(solution.len()));
+    fn generate_candidate(&mut self) -> Option<Code> {
         let max_attempt_generations = 10000;
 
-        println!("Solution: {:?}", solution);
-
-        for _attempt_number in 0..max_attempt_count {
-            let mut attempted = false;
-            for attempt_generation in 0..max_attempt_generations {
-                if let Selection(attempt) = tree.select_code(&guesses, available_colors, 2) {
-                    let score = compute_score(&attempt, solution);
-                    let guess = Guess::new(attempt, score);
-                    println!("recording guess: {:?}; tree size: {}; generations: {}", guess, tree.code_count(), attempt_generation);
-                    guesses.push(guess);
-                    if score.black == solution.len() {
-                        return;
-                    }
-                    attempted = true;
-                }
-            }
-
-            if !attempted {
-                println!("generations exhausted; tree size: {}; generations: {}", tree.code_count(), max_attempt_generations);
-                break;
+        for attempt_generation in 0..max_attempt_generations {
+            if let Selection(attempt) = self.tree.select_code(&self.attempts, &self.available_colors, 2) {
+                return Some(attempt);
             }
         }
+
+        println!("generations exhausted; tree size: {}; generations: {}", self.tree.code_count(), max_attempt_generations);
+        None
     }
 }
 
