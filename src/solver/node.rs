@@ -100,7 +100,7 @@ impl Node {
 
     fn expand(&mut self, available_colors: &Vec<Color>) {
         if let Unexpanded = self.children {
-            self.children = match select_random_matching_index(&self.code.code, '.') {
+            self.children = match select_random_matching_index(&self.code.code, b'.') {
                 None => NoChildren,
                 Some(index) => {
                     let mut children = Vec::new();

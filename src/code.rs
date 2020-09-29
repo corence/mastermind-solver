@@ -2,7 +2,7 @@
 use crate::random_index::*;
 use std::fmt;
 
-pub type Color = char;
+pub type Color = u8;
 
 #[derive(Clone)]
 pub struct Code {
@@ -18,12 +18,12 @@ impl Code {
 
     pub fn with_length(length: usize) -> Code {
         let mut code = Vec::new();
-        code.resize(length, '.');
+        code.resize(length, b'.');
         Self::new(code)
     }
 
     pub fn from_str(s: &str) -> Code {
-        Self::new(s.chars().collect())
+        Self::new(s.as_bytes().to_vec())
     }
 
     pub fn generate(length: usize, available_colors: &Vec<Color>) -> Code {
@@ -44,6 +44,6 @@ impl Code {
 
 impl fmt::Debug for Code {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&self.code.iter().collect::<String>())
+        f.write_str(std::str::from_utf8(&self.code).unwrap())
     }
 }

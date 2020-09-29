@@ -14,8 +14,8 @@ use std::collections::BTreeMap;
 use std::env;
 
 fn parse_charset(charset: &str) -> Result<Vec<Color>, String> {
-    let mut available_colors: Vec<Color> = charset.chars().collect();
-    if let Some(_) = available_colors.iter().position(|c| *c == '.') {
+    let mut available_colors: Vec<Color> = charset.as_bytes().to_vec();
+    if let Some(_) = available_colors.iter().position(|c| *c == b'.') {
         return Err(format!("charset cannot contain period character"));
     }
 
@@ -45,7 +45,8 @@ fn parse_solution(solution_type: &str, second_argument: &str, available_colors: 
         },
         "input" => {
             let solution = second_argument;
-            let illegal_colors: Vec<Color> = solution.chars()
+            let illegal_colors: Vec<Color> = solution.as_bytes().iter()
+                .map(|sc| *sc)
                 .filter(|sc| available_colors.iter().position(|ac| *ac == *sc).is_none())
                 .collect();
 
@@ -88,7 +89,7 @@ fn main() {
     match parse_args(&env::args().collect(), &mut solver_constructors) {
         Ok((available_colors, solution, mut solver)) => {
             let max_attempt_count = 10;
-            println!("available colors: {:?}", available_colors);
+            println!("available colors: {}", std::str::from_utf8(&available_colors).unwrap());
             println!("solution: {:?}", solution);
             println!("selected solver: {}", solver.name());
             println!("max attempt count: {}", max_attempt_count);

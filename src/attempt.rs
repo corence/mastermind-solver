@@ -80,14 +80,14 @@ pub fn compute_score(a: &Code, b: &Code) -> Score {
 
     let mut white = 0;
     for (ac, a_count) in &a_counts {
-        if **ac == '.' {
+        if **ac == b'.' {
             continue;
         }
         let b_count = *b_counts.get(*ac).unwrap_or(&0);
         white += std::cmp::min(*a_count, b_count);
     }
 
-    let num_dots = *a_counts.get(&'.').unwrap_or(&0) + *b_counts.get(&'.').unwrap_or(&0);
+    let num_dots = *a_counts.get(&b'.').unwrap_or(&0) + *b_counts.get(&b'.').unwrap_or(&0);
     Score {
         num_dots,
         black,
