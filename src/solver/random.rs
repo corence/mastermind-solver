@@ -2,7 +2,7 @@
 use crate::attempt::*;
 use crate::code::*;
 use crate::random_index::*;
-use super::Algorithm;
+use super::Solver;
 
 pub struct Random {
     available_colors: Vec<Color>,
@@ -18,13 +18,13 @@ impl Random {
     }
 }
 
-impl Algorithm for Random {
+impl Solver for Random {
     fn name(&self) -> &str {
         "random"
     }
 
     fn record_attempt(&mut self, attempt: &Code, score: Score) {
-        // ignore attempts for this silly algorithm
+        // ignore attempts for this silly solver
     }
 
     fn generate_candidate(&mut self) -> Option<Code> {

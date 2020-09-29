@@ -8,7 +8,6 @@ use crate::attempt::*;
 use crate::code::*;
 use crate::random_index::*;
 use crate::solver::*;
-use crate::solver::algorithm::*;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 use std::collections::BTreeMap;
@@ -61,41 +60,41 @@ fn parse_solution(solution_type: &str, second_argument: &str, available_colors: 
     }
 }
 
-fn parse_algorithm(name: &str, algorithm_constructors: &mut BTreeMap<String, AlgorithmConstructor>) -> Result<AlgorithmConstructor, String> {
-    if let Some(constructor) = algorithm_constructors.remove(name) {
+fn parse_solver_name(name: &str, solver_constructors: &mut BTreeMap<String, SolverConstructor>) -> Result<SolverConstructor, String> {
+    if let Some(constructor) = solver_constructors.remove(name) {
         Ok(constructor)
     } else {
-        Err(format!("unrecognized algorithm: {}", name))
+        Err(format!("unrecognized solver name: {}", name))
     }
 }
 
-fn parse_args(args: &Vec<String>, algorithm_constructors: &mut BTreeMap<String, AlgorithmConstructor>) -> Result<(Vec<Color>, Code, Box<dyn Algorithm>), String> {
+fn parse_args(args: &Vec<String>, solver_constructors: &mut BTreeMap<String, SolverConstructor>) -> Result<(Vec<Color>, Code, Box<dyn Solver>), String> {
     if args.len() != 5 {
         return Err(format!("number of arguments should be 5, but was {}", args.len()));
     }
 
     let available_colors = parse_charset(&args[1])?;
     let solution = parse_solution(&args[2], &args[3], &available_colors)?;
-    let algorithm_constructor = parse_algorithm(&args[4], algorithm_constructors)?;
-    let algorithm = algorithm_constructor(&available_colors, solution.len());
+    let solver_constructor = parse_solver_name(&args[4], solver_constructors)?;
+    let solver = solver_constructor(&available_colors, solution.len());
 
-    Ok((available_colors, solution, algorithm))
+    Ok((available_colors, solution, solver))
 }
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    let mut algorithm_constructors = solver::algorithm::algorithm_constructors();
-    let algorithm_names: Vec<String> = algorithm_constructors.keys().map(|name| name.clone()).collect();
+    let mut solver_constructors = solver::solver_constructors();
+    let solver_names: Vec<String> = solver_constructors.keys().map(|name| name.clone()).collect();
 
-    match parse_args(&env::args().collect(), &mut algorithm_constructors) {
-        Ok((available_colors, solution, mut algorithm)) => {
+    match parse_args(&env::args().collect(), &mut solver_constructors) {
+        Ok((available_colors, solution, mut solver)) => {
             let max_attempt_count = 10;
             println!("available colors: {:?}", available_colors);
             println!("solution: {:?}", solution);
-            println!("selected algorithm: {}", algorithm.name());
+            println!("selected solver: {}", solver.name());
             println!("max attempt count: {}", max_attempt_count);
 
-            let submission = solve(&mut (*algorithm), max_attempt_count, &solution);
+            let submission = solve(&mut (*solver), max_attempt_count, &solution);
             println!("submission: {:?}", submission);
         },
         Err(s) => {
@@ -104,9 +103,9 @@ fn main() {
             println!();
             println!("This is a solver for the game called Mastermind.");
             println!();
-            println!("usage 1: {} <charset> generate <length> <algorithm>", args[0]);
+            println!("usage 1: {} <charset> generate <length> <solver>", args[0]);
             println!("  this generates a solution.");
-            println!("usage 2: {} <charset> input <solution> <algorithm>", args[0]);
+            println!("usage 2: {} <charset> input <solution> <solver>", args[0]);
             println!("  this solves the given solution.");
             println!();
             println!("definitions:");
@@ -119,8 +118,8 @@ fn main() {
             println!();
             println!("<solution>: the code for the program to attempt to solve. Each character must be in the <charset>.");
             println!();
-            println!("<algorithm>: the choice of solving algorithm. Valid choices:");
-            println!("{:#?}", algorithm_names);
+            println!("<solver>: the choice of solver. Valid choices:");
+            println!("{:#?}", solver_names);
         }
     }
 
@@ -210,15 +209,15 @@ fn solve_with_tree_per_attempt(max_attempt_count: usize, solution: &Code, availa
 }
 */
 
-fn solve(algorithm: &mut Algorithm, max_attempt_count: usize, solution: &Code) -> Option<Code> {
+fn solve(solver: &mut Solver, max_attempt_count: usize, solution: &Code) -> Option<Code> {
     for _attempt_number in 0..max_attempt_count {
-        if let Some(candidate) = algorithm.generate_candidate() {
+        if let Some(candidate) = solver.generate_candidate() {
             let score = compute_score(&candidate, solution);
             println!("recording guess: {:?}", (&candidate, score));
             if score.black == solution.len() {
                 return Some(candidate);
             }
-            algorithm.record_attempt(&candidate, score);
+            solver.record_attempt(&candidate, score);
         } else {
             break;
         }

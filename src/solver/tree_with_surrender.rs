@@ -1,8 +1,8 @@
 
 use crate::attempt::*;
 use crate::code::*;
-use crate::solver::node::*;
 use super::*;
+use super::node::*;
 
 pub struct TreeWithSurrender {
     tree: Node,
@@ -20,7 +20,7 @@ impl TreeWithSurrender {
     }
 }
 
-impl Algorithm for TreeWithSurrender {
+impl Solver for TreeWithSurrender {
     fn name(&self) -> &str {
         "tree_with_surrender"
     }
