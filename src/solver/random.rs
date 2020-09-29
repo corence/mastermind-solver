@@ -23,7 +23,7 @@ impl Solver for Random {
         "random"
     }
 
-    fn record_attempt(&mut self, attempt: &Code, score: Score) {
+    fn record_attempt(&mut self, _: &Code, _: Score) {
         // ignore attempts for this silly solver
     }
 

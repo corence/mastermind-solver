@@ -32,7 +32,7 @@ impl Solver for TreeWithSurrender {
     fn generate_candidate(&mut self) -> Option<Code> {
         let max_attempt_generations = 10000;
 
-        for attempt_generation in 0..max_attempt_generations {
+        for _attempt_generation in 0..max_attempt_generations {
             if let Selection(attempt) = self.tree.select_code(&self.attempts, &self.available_colors, 2) {
                 return Some(attempt);
             }

@@ -12,11 +12,10 @@ use rand::seq::SliceRandom;
 use rand::thread_rng;
 use std::collections::BTreeMap;
 use std::env;
-use std::fmt;
 
 fn parse_charset(charset: &str) -> Result<Vec<Color>, String> {
     let mut available_colors: Vec<Color> = charset.chars().collect();
-    if let Some(pos) = available_colors.iter().position(|c| *c == '.') {
+    if let Some(_) = available_colors.iter().position(|c| *c == '.') {
         return Err(format!("charset cannot contain period character"));
     }
 
@@ -209,7 +208,7 @@ fn solve_with_tree_per_attempt(max_attempt_count: usize, solution: &Code, availa
 }
 */
 
-fn solve(solver: &mut Solver, max_attempt_count: usize, solution: &Code) -> Option<Code> {
+fn solve(solver: &mut dyn Solver, max_attempt_count: usize, solution: &Code) -> Option<Code> {
     for _attempt_number in 0..max_attempt_count {
         if let Some(candidate) = solver.generate_candidate() {
             let score = compute_score(&candidate, solution);

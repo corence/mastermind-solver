@@ -17,7 +17,7 @@ pub trait Solver {
 
 pub fn solver_constructors() -> BTreeMap<String, SolverConstructor> {
     let mut result: BTreeMap<String, SolverConstructor> = BTreeMap::new();
-    let mut constructors: Vec<(&str, SolverConstructor)> = vec![
+    let constructors: Vec<(&str, SolverConstructor)> = vec![
         ("random", |available_colors, solution_length| Box::new(random::Random::new(available_colors, solution_length))),
         ("tree_with_surrender", |available_colors, solution_length| Box::new(tree_with_surrender::TreeWithSurrender::new(available_colors, solution_length))),
     ];
