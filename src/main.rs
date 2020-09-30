@@ -34,11 +34,7 @@ fn parse_solution(solution_type: &str, second_argument: &str, available_colors: 
     match solution_type {
         "generate" => {
             if let Ok(solution_length) = second_argument.parse::<usize>() {
-                if solution_length > 10 {
-                    Err(format!("okay but that's too crazy: your length shouldn't go over 10 i mean"))
-                } else {
-                    Ok(Code::generate(solution_length, available_colors))
-                }
+                Ok(Code::generate(solution_length, available_colors))
             } else {
                 Err(format!("couldn't parse the length for the generated solution length"))
             }
